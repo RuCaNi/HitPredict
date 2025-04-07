@@ -23,12 +23,8 @@ from profanity_check import predict_prob
 
 import nltk
 
-@st.cache_data
-def prepare_instance(): # Only for first time
-    nltk.download('punkt_tab')
-    login(token=st.secrets['HF_TOKEN'])
-
-prepare_instance()
+nltk.download('punkt_tab')
+login(token=st.secrets['HF_TOKEN'])
 
 
 # pd.set_option('display.max_columns', None) # Optional for displaying in Colab
@@ -447,7 +443,7 @@ elif page == "🎵 Song bewerten":
             for column in df.columns:
                 if column.startswith("genre_"):
                     genre_cols.append(column)
-                else:
+                elif column != "year":
                     feature_cols.append(column)
 
             # Show metrics for each feature
@@ -455,7 +451,7 @@ elif page == "🎵 Song bewerten":
 
             for feature in feature_cols:
                 value = df.loc[0, feature]
-                st.metric(label=feature.capitalize(), value=value)
+                st.metric(label=feature.capitalize(), value=f"{value:.2f}")
 
             # Dropdown for genre
             selected_genre = st.selectbox("Select a genre", genre_cols)
@@ -472,6 +468,6 @@ elif page == "🎵 Song bewerten":
             # Predict popularity
             overall_score = predict_popularity(df.copy())
 
-            st.subheader(f"✨ Gesamtbewertung des Songs: {overall_score[0,0]} / 100 ✨")
+            st.subheader(f"✨ Gesamtbewertung des Songs: {overall_score[0,0]:.1f} / 100 ✨")
 
             st.markdown("</div>", unsafe_allow_html=True)
