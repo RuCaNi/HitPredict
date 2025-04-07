@@ -29,7 +29,7 @@ if "hf_logged_in" not in st.session_state:
 
 if "nltk_download" not in st.session_state:
     nltk.download('punkt_tab')
-    st.session_state.hf_logged_in = True
+    st.session_state.nltk_download = True
 
 # pd.set_option('display.max_columns', None) # Optional for displaying in Colab
 
@@ -228,6 +228,7 @@ def explicitness_check(text):
     return explicitness[0]
 
 
+@st.cache_data
 def extract_features(filename):
     """Extract audio and lyric features and return as a DataFrame."""
     with st.status("Analyzing Audio...", expanded=True) as status:
@@ -311,7 +312,7 @@ def extract_features(filename):
 
     return df
 
-
+@st.cache_data
 def predict_popularity(df):
     """Predict popularity using a prepared machine learning model."""
     with open("model.pkl", "rb") as file:
@@ -429,49 +430,48 @@ elif page == "🎵 Song bewerten":
     if uploaded_file:
         st.audio(uploaded_file)
 
-        if st.button("Song analysieren 🔥"):
+        # Save uploaded file to a temporary location
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as temp_file:
+            temp_file.write(uploaded_file.read())
+            filename = temp_file.name
 
-            # Save uploaded file to a temporary location
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as temp_file:
-                temp_file.write(uploaded_file.read())
-                filename = temp_file.name
+        df = extract_features(filename)
 
-            df = extract_features(filename)
+        st.header("📊 Metriken der Songanalyse")
 
-            st.header("📊 Metriken der Songanalyse")
+        # Separate genre columns and feature columns
+        genre_cols = []
+        feature_cols = []
 
-            # Separate genre columns and feature columns
-            genre_cols = []
-            feature_cols = []
+        for column in df.columns:
+            if column.startswith("genre_"):
+                genre_cols.append(column.replace("genre_", ""))
+            elif column != "year":
+                feature_cols.append(column)
 
-            for column in df.columns:
-                if column.startswith("genre_"):
-                    genre_cols.append(column)
-                elif column != "year":
-                    feature_cols.append(column)
+        for feature in feature_cols:
+            value = df.loc[0, feature]
+            st.metric(label=feature.capitalize(), value=round(value, 2))
 
-            # Show metrics for each feature
-            st.title("Track Features")
+        current_genre = "other"
+        for column in genre_cols:
+            if df.at[0, f"genre_{column}"] == True:
+                current_genre = column
+                break
 
-            for feature in feature_cols:
-                value = df.loc[0, feature]
-                st.metric(label=feature.capitalize(), value=f"{value:.2f}")
+        st.metric(label="Genre", value=current_genre.capitalize())
 
-            # Dropdown for genre
-            selected_genre = st.selectbox("Select a genre", genre_cols)
-            genre_value = df.at[0, selected_genre]
+        # Dropdown for genre
+        selected_genre = st.selectbox("Change genre", genre_cols, placeholder=current_genre)
 
-            # Display whether the genre is selected
-            if genre_value:
-                display_value = "Yes"
-            else:
-                display_value = "No"
+        if selected_genre:
+            df[f"genre_{current_genre}"] = False
+            df[f"genre_{selected_genre}"] = True
 
-            st.metric(label=selected_genre, value=display_value)
 
-            # Predict popularity
-            overall_score = predict_popularity(df.copy())
+        # Predict popularity
+        overall_score = predict_popularity(df.copy())
 
-            st.subheader(f"✨ Gesamtbewertung des Songs: {overall_score[0,0]:.1f} / 100 ✨")
+        st.subheader(f"✨ Gesamtbewertung des Songs: {overall_score[0,0]:.1f} / 100 ✨")
 
-            st.markdown("</div>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
