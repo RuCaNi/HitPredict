@@ -14,6 +14,7 @@ from faster_whisper import WhisperModel
 
 import streamlit as st
 import tempfile
+from huggingface_hub import login
 
 import textstat
 from textblob import TextBlob
@@ -22,10 +23,13 @@ from profanity_check import predict_prob
 
 import nltk
 
-try:
-    nltk.data.find('tokenizers/punkt')
-except LookupError:
-    nltk.download('punkt_tab') # Only for first time
+@st.cache_data
+def prepare_instance(): # Only for first time
+    nltk.download('punkt_tab')
+    login(token=st.secrets['HF_TOKEN'])
+
+prepare_instance()
+
 
 # pd.set_option('display.max_columns', None) # Optional for displaying in Colab
 
