@@ -21,7 +21,11 @@ from collections import Counter
 from profanity_check import predict_prob
 
 import nltk
-nltk.download('punkt_tab') # Only for first time
+
+try:
+    nltk.data.find('tokenizers/punkt')
+except LookupError:
+    nltk.download('punkt_tab') # Only for first time
 
 # pd.set_option('display.max_columns', None) # Optional for displaying in Colab
 
@@ -170,13 +174,13 @@ def compute_time_signature(audio, beats, sample_rate):
 
 def transcribe_lyrics(filename):
     """Transcribe lyrics from audio using Whisper model."""
-    model_size = "small"
+    model_size = "small.en"
 
     # OPTIONAL: ADJUST FOR HARDWARE
     # run on GPU with FP16
     # model = WhisperModel(model_size, device="cuda", compute_type="float16")
     # run on CPU with INT8
-    model = WhisperModel(model_size, device="cpu", compute_type="int8", local_files_only=False)
+    model = WhisperModel(model_size, device="cpu", compute_type="int8")
     
     segments, info = model.transcribe(filename, beam_size=5)  # Transcribe audio
     transcription = "\n".join(segment.text for segment in segments)  # Join segments
