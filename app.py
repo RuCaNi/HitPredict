@@ -228,7 +228,7 @@ def explicitness_check(text):
     return explicitness[0]
 
 
-@st.cache_data
+@st.cache_data(show_spinner=False)
 def extract_features(filename):
     """Extract audio and lyric features and return as a DataFrame."""
     with st.status("Analyzing Audio...", expanded=True) as status:
@@ -312,7 +312,7 @@ def extract_features(filename):
 
     return df
 
-@st.cache_data
+@st.cache_data(show_spinner=False)
 def predict_popularity(df):
     """Predict popularity using a prepared machine learning model."""
     with open("model.pkl", "rb") as file:
@@ -451,7 +451,7 @@ elif page == "🎵 Song bewerten":
 
         for feature in feature_cols:
             value = df.loc[0, feature]
-            st.metric(label=feature.capitalize(), value=round(value, 2))
+            st.metric(label=feature.capitalize(), value=round(float(value), 2))
 
         current_genre = "other"
         for column in genre_cols:
@@ -462,7 +462,7 @@ elif page == "🎵 Song bewerten":
         st.metric(label="Genre", value=current_genre.capitalize())
 
         # Dropdown for genre
-        selected_genre = st.selectbox("Change genre", genre_cols, placeholder=current_genre)
+        selected_genre = st.selectbox("Change genre", genre_cols, index=genre_cols.index(current_genre), disabled=True)
 
         if selected_genre:
             df[f"genre_{current_genre}"] = False
