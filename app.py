@@ -4,7 +4,6 @@
 ### MAKE SURE THAT MODEL AND AUDIO FILES ARE PLACED IN THE SAME FOLDER AS THE .PY ###
 
 
-import sys
 import numpy as np
 import pandas as pd
 import pickle
@@ -23,9 +22,14 @@ from profanity_check import predict_prob
 
 import nltk
 
-nltk.download('punkt_tab')
-login(token=st.secrets['HF_TOKEN'])
 
+if "hf_logged_in" not in st.session_state:
+    login(token=st.secrets["HF_TOKEN"])
+    st.session_state.hf_logged_in = True
+
+if "nltk_download" not in st.session_state:
+    nltk.download('punkt_tab')
+    st.session_state.hf_logged_in = True
 
 # pd.set_option('display.max_columns', None) # Optional for displaying in Colab
 
