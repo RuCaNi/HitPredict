@@ -176,7 +176,7 @@ def transcribe_lyrics(filename):
     # run on GPU with FP16
     # model = WhisperModel(model_size, device="cuda", compute_type="float16")
     # run on CPU with INT8
-    model = WhisperModel(model_size, device="cpu", compute_type="int8")
+    model = WhisperModel(model_size, device="cpu", compute_type="int8", local_files_only=False)
     
     segments, info = model.transcribe(filename, beam_size=5)  # Transcribe audio
     transcription = "\n".join(segment.text for segment in segments)  # Join segments
@@ -370,7 +370,7 @@ color: white;
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown("<div class='brand-name'>MusicAiSuccess 🎶</div>", unsafe_allow_html=True)
+st.markdown("<div class='brand-name'>HitPredict 🎶</div>", unsafe_allow_html=True)
 
 # Landingpage
 if page == "🏠 Landingpage":
@@ -378,10 +378,10 @@ if page == "🏠 Landingpage":
     st.title("🌟 Entdecke dein musikalisches Potenzial!")
     st.subheader("KI-gesteuerte Analysen für deinen nächsten Hit")
 
-    st.image("https://media.giphy.com/media/l0MYGb1LuZ3n7dRnO/giphy.gif", use_column_width=True)
+    st.image("https://media.giphy.com/media/l0MYGb1LuZ3n7dRnO/giphy.gif")
 
     st.markdown("""
-    ### Warum MusicAiSuccess?
+    ### Warum HitPredict?
     - 🎯 **Innovative KI-Analysen**
     - 📈 **Ausdrucksstarke Visualisierung**
     - 🌟 **Inspiration & Erfolg**
@@ -398,7 +398,7 @@ if page == "🏠 Landingpage":
     **Wie genau ist die Bewertung?** 
     Modernste KI-Technologie analysiert umfassend dein Musikstück.
     
-    **Ist MusicAiSuccess kostenlos nutzbar?** 
+    **Ist HitPredict kostenlos nutzbar?** 
     Ja, grundlegende Analysen sind kostenfrei nutzbar.
     
     **Was passiert mit meinen Daten?** 
@@ -420,7 +420,7 @@ elif page == "🎵 Song bewerten":
 
     if uploaded_file:
         st.audio(uploaded_file)
-    
+
         if st.button("Song analysieren 🔥"):
 
             # Save uploaded file to a temporary location
