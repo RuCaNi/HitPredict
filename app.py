@@ -13,6 +13,7 @@ import essentia.standard as es
 from faster_whisper import WhisperModel
 
 import streamlit as st
+import tempfile
 
 import textstat
 from textblob import TextBlob
@@ -415,46 +416,54 @@ elif page == "🎵 Song bewerten":
     st.markdown("<div class='main'>", unsafe_allow_html=True)
     st.title("🎤 Lade deinen Song hoch")
 
-    uploaded_file = st.file_uploader("🎶 Audio hochladen (MP3, WAV)", type=["mp3", "wav"])
+    uploaded_file = st.file_uploader("🎶 Audio hochladen (MP3)", type=["mp3"])
 
     if uploaded_file:
         st.audio(uploaded_file)
+    
+        if st.button("Song analysieren 🔥"):
 
-    if st.button("Song analysieren 🔥"):
-        df = extract_features(uploaded_file)
+            # Save uploaded file to a temporary location
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as temp_file:
+                temp_file.write(uploaded_file.read())
+                filename = temp_file.name
 
-        st.header("📊 Metriken der Songanalyse")
+            df = extract_features(filename)
 
-        # Separate genre columns and feature columns
-        genre_cols = []
-        feature_cols = []
+            st.header("📊 Metriken der Songanalyse")
 
-        for column in df.columns:
-            if column.startswith("genre_"):
-                genre_cols.append(column)
+            # Separate genre columns and feature columns
+            genre_cols = []
+            feature_cols = []
+
+            for column in df.columns:
+                if column.startswith("genre_"):
+                    genre_cols.append(column)
+                else:
+                    feature_cols.append(column)
+
+            # Show metrics for each feature
+            st.title("Track Features")
+
+            for feature in feature_cols:
+                value = df.loc[0, feature]
+                st.metric(label=feature.capitalize(), value=value)
+
+            # Dropdown for genre
+            selected_genre = st.selectbox("Select a genre", genre_cols)
+            genre_value = df.at[0, selected_genre]
+
+            # Display whether the genre is selected
+            if genre_value:
+                display_value = "Yes"
             else:
-                feature_cols.append(column)
+                display_value = "No"
 
-        # Show metrics for each feature
-        st.title("Track Features")
+            st.metric(label=selected_genre, value=display_value)
 
-        for feature in feature_cols:
-            value = df.loc[0, feature]
-            st.metric(label=feature.capitalize(), value=value)
+            # Predict popularity
+            overall_score = predict_popularity(df.copy())
 
-        # Dropdown for genre
-        selected_genre = st.selectbox("Select a genre", genre_cols)
-        genre_value = df.at[0, selected_genre]
+            st.subheader(f"✨ Gesamtbewertung des Songs: {overall_score[0,0]} / 100 ✨")
 
-        # Display whether the genre is selected
-        if genre_value:
-            display_value = "Yes"
-        else:
-            display_value = "No"
-
-        st.metric(label=selected_genre, value=display_value)
-
-        overall_score = predict_popularity(df.copy())
-        st.subheader(f"✨ Gesamtbewertung des Songs: {overall_score[0,0]} / 100 ✨")
-
-        st.markdown("</div>", unsafe_allow_html=True)
+            st.markdown("</div>", unsafe_allow_html=True)
