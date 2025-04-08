@@ -245,15 +245,13 @@ def extract_features(filename):
         instrumentalness, speechiness = compute_instrumental_and_speech(embeddings)
         valence = compute_valence(embeddings)
         time_signature = compute_time_signature(audio, beats, sample_rate)
-        st.write("Transcribing Lyrics")
+        st.write("Transcribing Lyrics (∼1 minute)")
         lyrics = transcribe_lyrics(filename)
         st.write("Computing Textual Features")
         repetition = ngram_repetition(lyrics)
         readability = readability_check(lyrics)
         sentiment_polarity, sentiment_subjectivity = analyze_sentiment(lyrics)
         explicitness = explicitness_check(lyrics)
-
-        st.write("Finalizing")
     
         df = pd.DataFrame([{
             'year': 2023,
@@ -395,8 +393,8 @@ if page == "🏠 Landingpage":
     ---
     
     ### Erfahrungsberichte
-    "Diese Plattform hat mein Songwriting auf ein neues Level gehoben!" – *Anna M.* 
-    "Absolut empfehlenswert für jeden Musiker!" – *Tom L.*
+    "Diese Plattform hat mein Songwriting auf ein neues Level gehoben!" – *T. Swift* 
+    "Absolut empfehlenswert für jeden Musiker!" – *B. Mars*
     
     ---
     
@@ -427,12 +425,16 @@ elif page == "🎵 Song bewerten":
     if uploaded_file:
         st.audio(uploaded_file)
 
-        # Save uploaded file to a temporary location
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as temp_file:
-            temp_file.write(uploaded_file.read())
-            filename = temp_file.name
+        if "df" not in st.session_state or "last_uploaded" not in st.session_state or uploaded_file != st.session_state.last_uploaded:
+            # Save uploaded file to a temporary location
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as temp_file:
+                temp_file.write(uploaded_file.read())
+                filename = temp_file.name
 
-        df = extract_features(filename)
+            st.session_state.df = extract_features(filename)
+            st.session_state.last_uploaded = uploaded_file
+
+        df = st.session_state.df
 
         st.header("📊 Metriken der Songanalyse")
 
@@ -446,24 +448,25 @@ elif page == "🎵 Song bewerten":
             elif column != "year":
                 feature_cols.append(column)
 
-        for feature in feature_cols:
-            value = df.loc[0, feature]
-            st.metric(label=feature.capitalize(), value=round(float(value), 2))
-
         current_genre = "other"
         for column in genre_cols:
             if df.at[0, f"genre_{column}"] == True:
                 current_genre = column
                 break
 
+
         st.metric(label="Genre", value=current_genre.capitalize())
 
         # Dropdown for genre
-        selected_genre = st.selectbox("Change genre", genre_cols, index=genre_cols.index(current_genre), disabled=True)
+        selected_genre = st.selectbox("Change genre", genre_cols, index=genre_cols.index(current_genre))
 
         if selected_genre:
             df[f"genre_{current_genre}"] = False
             df[f"genre_{selected_genre}"] = True
+
+        for feature in feature_cols:
+            value = df.loc[0, feature]
+            st.metric(label=feature.capitalize(), value=round(float(value), 2))
 
 
         # Predict popularity
