@@ -329,7 +329,7 @@ def predict_popularity(df):
 
 # Seitenkonfiguration
 st.set_page_config(page_title="HitPredict 🎶", layout="wide")
-st.logo("Logo.jpg")
+st.logo("Logo.jpg", size="large")
 
 # Navigation
 page = st.sidebar.radio("Navigation 🎛️", ["🏠 Landingpage", "🎵 Song bewerten"])
@@ -454,11 +454,11 @@ elif page == "🎵 Song bewerten":
                 current_genre = column
                 break
 
-        st.metric(label="Genre", value=current_genre.capitalize())
-
 
         # Dropdown for genre
         selected_genre = st.selectbox("Change genre", genre_cols, index=genre_cols.index(current_genre))
+
+        st.metric(label="Genre", value=current_genre.capitalize())
 
         if selected_genre:
             st.session_state.df.loc[0, f"genre_{current_genre}"] = False
