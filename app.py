@@ -184,7 +184,7 @@ def transcribe_lyrics(filename):
 
         response = deepgram.listen.rest.v('1').transcribe_file(payload, options, timeout=600)
 
-    transcription = response.to_json()["results"]["channels"][0]["alternatives"][0]["transcript"]
+    transcription = response["results"]["channels"][0]["alternatives"][0]["transcript"]
     return transcription
 
 
@@ -395,8 +395,8 @@ if page == "🏠 Landingpage":
     ---
     
     ### Erfahrungsberichte
-    > "Diese Plattform hat mein Songwriting auf ein neues Level gehoben!" – *Anna M.* 
-    > "Absolut empfehlenswert für jeden Musiker!" – *Tom L.*
+    "Diese Plattform hat mein Songwriting auf ein neues Level gehoben!" – *Anna M.* 
+    "Absolut empfehlenswert für jeden Musiker!" – *Tom L.*
     
     ---
     
@@ -469,6 +469,6 @@ elif page == "🎵 Song bewerten":
         # Predict popularity
         overall_score = predict_popularity(df.copy())
 
-        st.subheader(f"✨ Gesamtbewertung des Songs: {overall_score[0,0]:.1f} / 100 ✨")
+        st.subheader(f"✨ Popularity Score: {overall_score[0,0]:.1f} / 100 ✨")
 
         st.markdown("</div>", unsafe_allow_html=True)
