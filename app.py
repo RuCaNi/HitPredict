@@ -329,6 +329,7 @@ def predict_popularity(df):
 
 # Seitenkonfiguration
 st.set_page_config(page_title="HitPredict 🎶", layout="wide")
+st.logo("Logo.jpg")
 
 # Navigation
 page = st.sidebar.radio("Navigation 🎛️", ["🏠 Landingpage", "🎵 Song bewerten"])
@@ -434,7 +435,6 @@ elif page == "🎵 Song bewerten":
             st.session_state.df = extract_features(filename)
             st.session_state.last_uploaded = uploaded_file
 
-        df = st.session_state.df
 
         st.header("📊 Metriken der Songanalyse")
 
@@ -442,7 +442,7 @@ elif page == "🎵 Song bewerten":
         genre_cols = []
         feature_cols = []
 
-        for column in df.columns:
+        for column in st.session_state.df.columns:
             if column.startswith("genre_"):
                 genre_cols.append(column.replace("genre_", ""))
             elif column != "year":
@@ -450,27 +450,27 @@ elif page == "🎵 Song bewerten":
 
         current_genre = "other"
         for column in genre_cols:
-            if df.at[0, f"genre_{column}"] == True:
+            if st.session_state.df.at[0, f"genre_{column}"] == True:
                 current_genre = column
                 break
 
-
         st.metric(label="Genre", value=current_genre.capitalize())
+
 
         # Dropdown for genre
         selected_genre = st.selectbox("Change genre", genre_cols, index=genre_cols.index(current_genre))
 
         if selected_genre:
-            df[f"genre_{current_genre}"] = False
-            df[f"genre_{selected_genre}"] = True
+            st.session_state.df.loc[0, f"genre_{current_genre}"] = False
+            st.session_state.df.loc[0, f"genre_{selected_genre}"] = True
 
         for feature in feature_cols:
-            value = df.loc[0, feature]
+            value = st.session_state.df.loc[0, feature]
             st.metric(label=feature.capitalize(), value=round(float(value), 2))
 
 
         # Predict popularity
-        overall_score = predict_popularity(df.copy())
+        overall_score = predict_popularity(st.session_state.df.copy())
 
         st.subheader(f"✨ Popularity Score: {overall_score[0,0]:.1f} / 100 ✨")
 
