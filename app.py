@@ -175,14 +175,14 @@ def transcribe_lyrics(filename):
     """Transcribe lyrics from audio using the Deepgram API with OpenAI Whisper."""
     deepgram = DeepgramClient(st.secrets["DG_TOKEN"])
 
-    with open(filename, 'rb') as buffer_data:  # API request according to Deepgram's tutorial
+    with open(filename, 'rb') as buffer_data:  # API request according to Deepgram's docs
         payload = { 'buffer': buffer_data }
 
         options = PrerecordedOptions(
-            smart_format=True, model="whisper", language="en-US"
+            smart_format=True, model="whisper"
         )
 
-        response = deepgram.listen.prerecorded.v('1').transcribe_file(payload, options)
+        response = deepgram.listen.rest.v('1').transcribe_file(payload, options)
 
     transcription = response.to_json()["results"]["channels"][0]["alternatives"][0]["transcript"]
     return transcription
