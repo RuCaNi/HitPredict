@@ -179,7 +179,7 @@ def transcribe_lyrics(filename):
         payload = { 'buffer': buffer_data }
 
         options = PrerecordedOptions(
-            smart_format=True, model="whisper"
+            smart_format=True, model="whisper", timeout=600
         )
 
         response = deepgram.listen.rest.v('1').transcribe_file(payload, options)
