@@ -458,11 +458,12 @@ elif page == "🎵 Song bewerten":
         # Dropdown for genre
         selected_genre = st.selectbox("Change genre", genre_cols, index=genre_cols.index(current_genre))
 
-        st.metric(label="Genre", value=current_genre.capitalize())
-
         if selected_genre:
             st.session_state.df.loc[0, f"genre_{current_genre}"] = False
             st.session_state.df.loc[0, f"genre_{selected_genre}"] = True
+            current_genre = selected_genre
+
+        st.metric(label="Genre", value=current_genre.capitalize())
 
         for feature in feature_cols:
             value = st.session_state.df.loc[0, feature]
