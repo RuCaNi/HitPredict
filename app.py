@@ -1,5 +1,5 @@
 ### IMPORTANT: INSTALL NECESSARY LIBRARIES ###
-### COMMAND: pip install numpy==1.26.1 essentia-tensorflow=="2.1b6.dev1110" faster-whisper textstat textblob==0.17.1 alt-profanity-check==1.3.2 scikit-learn==1.3.2 xgboost==2.1.4
+### COMMAND: pip install numpy==1.26.1 essentia-tensorflow=="2.1b6.dev1110" deepgram-sdk==3.10.1 textstat textblob==0.17.1 alt-profanity-check==1.3.2 scikit-learn==1.3.2 xgboost==2.1.4
 
 ### MAKE SURE THAT MODEL AND AUDIO FILES ARE PLACED IN THE SAME FOLDER AS THE .PY ###
 
@@ -9,11 +9,10 @@ import pandas as pd
 import pickle
 import essentia
 import essentia.standard as es
-from faster_whisper import WhisperModel
 
 import streamlit as st
 import tempfile
-from huggingface_hub import login
+from deepgram import DeepgramClient, PrerecordedOptions
 
 import textstat
 from textblob import TextBlob
@@ -22,10 +21,6 @@ from profanity_check import predict_prob
 
 import nltk
 
-
-if "hf_logged_in" not in st.session_state:
-    login(token=st.secrets["HF_TOKEN"])
-    st.session_state.hf_logged_in = True
 
 if "nltk_download" not in st.session_state:
     nltk.download('punkt_tab')
@@ -177,17 +172,19 @@ def compute_time_signature(audio, beats, sample_rate):
 
 
 def transcribe_lyrics(filename):
-    """Transcribe lyrics from audio using Whisper model."""
-    model_size = "small.en"
+    """Transcribe lyrics from audio using the Deepgram API with OpenAI Whisper."""
+    deepgram = DeepgramClient(st.secrets["DG_TOKEN"])
 
-    # OPTIONAL: ADJUST FOR HARDWARE
-    # run on GPU with FP16
-    # model = WhisperModel(model_size, device="cuda", compute_type="float16")
-    # run on CPU with INT8
-    model = WhisperModel(model_size, device="cpu", compute_type="int8")
-    
-    segments, info = model.transcribe(filename, beam_size=5)  # Transcribe audio
-    transcription = "\n".join(segment.text for segment in segments)  # Join segments
+    with open(filename, 'rb') as buffer_data:  # API request according to Deepgram's tutorial
+        payload = { 'buffer': buffer_data }
+
+        options = PrerecordedOptions(
+            smart_format=True, model="whisper", language="en-US"
+        )
+
+        response = deepgram.listen.prerecorded.v('1').transcribe_file(payload, options)
+
+    transcription = response.to_json()["results"]["channels"][0]["alternatives"][0]["transcript"]
     return transcription
 
 
