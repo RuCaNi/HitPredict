@@ -9,9 +9,14 @@ import pandas as pd
 import pickle
 import essentia
 import essentia.standard as es
+from sklearn.metrics.pairwise import euclidean_distances
 
 import streamlit as st
+import streamlit.components.v1 as components
 import tempfile
+
+import spotipy
+from spotipy.oauth2 import SpotifyClientCredentials
 from deepgram import DeepgramClient, PrerecordedOptions
 
 import textstat
@@ -63,14 +68,25 @@ def compute_genre(embeddings):
     "beautiful", "metal", "chillout", "male vocalists", "classic rock", "soul", "indie rock", "Mellow", "electronica", "80s",
     "folk", "90s", "chill", "instrumental", "punk", "oldies", "blues", "hard-rock", "ambient", "acoustic", "experimental",
     "female vocalist", "guitar", "hip-hop", "70s", "party", "country", "easy listening", "sexy", "catchy", "funk", "electro",
-    "heavy-metal", "Progressive rock", "60s", "rnb", "indie-pop", "sad", "House", "happy"]
-
-    avg_probs = np.mean(predictions, axis=0)  # Average predictions
-    genre = mapping[np.argmax(avg_probs)]  # Select genre with highest probability
+    "heavy-metal", "Progressive rock", "60s", "rnb", "indie-pop", "sad", "house", "happy"]
 
     # Only use genres that are known to both essentia and spotify
     common_genres = ['pop', 'acoustic', 'jazz', 'dance', 'electronic', 'funk', 'house', 'heavy-metal', 'indie-pop', 'folk', 'hard-rock',
                      'blues', 'hip-hop', 'rock', 'chill', 'metal', 'ambient', 'party', 'soul', 'guitar', 'punk', 'electro', 'sad', 'country']
+
+    avg_probs = np.mean(predictions, axis=0)  # Average predictions
+
+    for i in range(len(mapping)):
+        if mapping[i] not in common_genres:
+            avg_probs[i] = 0.0  # Set the probabilities for all genre's neither in spotify's nor essentia's data to zero
+
+    avg_probs[0] *= 0.1  # Adjustment for overweight on 'rock'
+    avg_probs[4] *= 0.1  # Adjustment for overweight on 'electronic'
+    avg_probs[11] *= 0.1  # Adjustment for overweight on 'metal'
+    avg_probs[28] *= 0.1  # Adjustment for overweight on 'ambient'
+    avg_probs[1] *= 3  # Adjustment for underweight on 'pop'
+
+    genre = mapping[np.argmax(avg_probs)]  # Select genre with the highest probability
 
     if genre not in common_genres:
       genre = "other"  # Set genre to 'other' if not in essentia's and spotify's data
@@ -307,11 +323,12 @@ def extract_features(filename):
 
     return df
 
+
 @st.cache_data(show_spinner=False)
 def predict_popularity(df):
     """Predict popularity using a prepared machine learning model."""
-    with open("model.pkl", "rb") as file:
-        linreg = pickle.load(file)
+    with open("xgboost_v4.pkl", "rb") as file:
+        model = pickle.load(file)
     with open("X_scaler.pkl", "rb") as file:
         X_scaler = pickle.load(file)
     with open("y_scaler.pkl", "rb") as file:
@@ -320,16 +337,77 @@ def predict_popularity(df):
     numeric_cols = df.select_dtypes(include=['number']).columns
     df[numeric_cols] = X_scaler.transform(df[numeric_cols])  # Scale features
 
-    y_pred = linreg.predict(df)  # Predict popularity
+    y_pred = model.predict(df)  # Predict popularity
     y_pred_rescaled = y_scaler.inverse_transform(y_pred.reshape(-1, 1))  # Rescale prediction
     return y_pred_rescaled
+
+
+@st.cache_data(show_spinner=False)
+def get_track_info(track_id): ###
+    """Initialize Spotify client, search for a track, and return its info."""
+    sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(
+        client_id=st.secrets["SP_CLIENT_ID"],
+        client_secret=st.secrets["SP_CLIENT_SECRET"]
+    ))
+
+    track = sp.track(track_id)
+
+    return {
+        'track_name': track['name'],
+        'artist_name': track['artists'][0]['name'],
+        'album_release': track['album']['release_date'],
+        'album_cover_url': track['album']['images'][0]['url'],
+        'popularity': track['popularity']
+    }
+
+
+@st.cache_data(show_spinner=False)
+def load_dataset():
+    df = pd.read_csv("spotify_data_similarity.csv", index_col=0)
+    df = pd.get_dummies(df, columns=['genre'])
+    return df
+
+
+@st.cache_data(show_spinner=False)
+def get_soulmate(X_pred, y_pred):
+    data = load_dataset()
+
+    # Load scalers
+    with open("X_scaler_full.pkl", "rb") as f:
+        X_scaler = pickle.load(f)
+    with open("y_scaler_full.pkl", "rb") as f:
+        y_scaler = pickle.load(f)
+
+    # Define columns
+    X_cols = [col for col in data.columns if col not in ['track_id', 'popularity']]
+    y_cols = ['popularity']
+
+    # Scale the dataset
+    X_scaled = X_scaler.transform(data[X_cols])
+    y_scaled = y_scaler.transform(data[y_cols])
+
+    data_scaled = np.hstack([y_scaled, X_scaled])
+
+    # Scale the prediction
+    X_pred_scaled = X_scaler.transform(pd.DataFrame(X_pred, columns=X_cols))
+    y_pred_scaled = y_scaler.transform(pd.DataFrame(y_pred, columns=y_cols))
+
+    pred_scaled = np.hstack([y_pred_scaled, X_pred_scaled])
+
+    # Find the closest match
+    distances = euclidean_distances(pred_scaled, data_scaled)
+    closest_idx = distances.argmin()
+
+    soulmate_id = data.iloc[closest_idx]['track_id']
+    return soulmate_id
+
 
 
 ### STREAMLIT ###
 
 # Seitenkonfiguration
 st.set_page_config(page_title="HitPredict 🎶", layout="wide")
-st.logo("Logo.jpg", size="large")
+st.logo("Logo.png", size="large")
 
 # Navigation
 page = st.sidebar.radio("Navigation 🎛️", ["🏠 Landingpage", "🎵 Song bewerten"])
@@ -454,15 +532,6 @@ elif page == "🎵 Song bewerten":
                 current_genre = column
                 break
 
-
-        # Dropdown for genre
-        selected_genre = st.selectbox("Change genre", genre_cols, index=genre_cols.index(current_genre))
-
-        if selected_genre:
-            st.session_state.df.loc[0, f"genre_{current_genre}"] = False
-            st.session_state.df.loc[0, f"genre_{selected_genre}"] = True
-            current_genre = selected_genre
-
         st.metric(label="Genre", value=current_genre.capitalize())
 
         for feature in feature_cols:
@@ -471,8 +540,29 @@ elif page == "🎵 Song bewerten":
 
 
         # Predict popularity
-        overall_score = predict_popularity(st.session_state.df.copy())
+        popularity = predict_popularity(st.session_state.df)  ###
 
-        st.subheader(f"✨ Popularity Score: {overall_score[0,0]:.1f} / 100 ✨")
+        st.subheader(f"✨ Popularity Score: {popularity[0, 0]:.1f} / 100 ✨")
+
+        spotify_id = get_soulmate(st.session_state.df, popularity)  ###
+
+        similar_song = get_track_info(spotify_id)
+
+        st.markdown("---")
+        col1, col2 = st.columns([2, 1])
+        with col1:
+            st.header("👫 Song Soulmate")
+
+            subcol1, subcol2, subcol3 = st.columns([3, 1, 1])
+            subcol1.subheader(f'{similar_song["artist_name"]} - {similar_song["track_name"]}')
+            subcol2.metric(label='Popularity', value=similar_song["popularity"])
+            subcol3.metric(label='Release', value=similar_song["album_release"][:4])
+
+            components.iframe(f"https://open.spotify.com/embed/track/{spotify_id}", height=80)
+
+        col2.write("")
+        col2.write("")
+        col2.write("")
+        col2.image(similar_song["album_cover_url"], width=197)
 
         st.markdown("</div>", unsafe_allow_html=True)
