@@ -334,8 +334,7 @@ def predict_popularity(df):
     with open("y_scaler.pkl", "rb") as file:
         y_scaler = pickle.load(file)
 
-    numeric_cols = df.select_dtypes(include=['number']).columns
-    df[numeric_cols] = X_scaler.transform(df[numeric_cols])  # Scale features
+    df = X_scaler.transform(df)  # Scale features
 
     y_pred = model.predict(df)  # Predict popularity
     y_pred_rescaled = y_scaler.inverse_transform(y_pred.reshape(-1, 1))  # Rescale prediction
