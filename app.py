@@ -373,9 +373,9 @@ def get_soulmate(X_pred, y_pred):
     data = load_dataset()
 
     # Load scalers
-    with open("X_scaler_full.pkl", "rb") as f:
+    with open("X_scaler.pkl", "rb") as f:
         X_scaler = pickle.load(f)
-    with open("y_scaler_full.pkl", "rb") as f:
+    with open("y_scaler.pkl", "rb") as f:
         y_scaler = pickle.load(f)
 
     # Define columns
