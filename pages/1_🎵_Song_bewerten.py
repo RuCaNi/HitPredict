@@ -26,9 +26,9 @@ from nltk import download
 
 def ensure_punkt():
     try:
-        find('tokenizers/punkt')
+        find('tokenizers/punkt_tab')
     except LookupError:
-        download('punkt')
+        download('punkt_tab')
 
 ensure_punkt()
 
