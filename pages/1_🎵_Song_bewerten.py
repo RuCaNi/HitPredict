@@ -1,13 +1,9 @@
-### IMPORTANT: INSTALL NECESSARY LIBRARIES ###
-### COMMAND: pip install numpy==1.26.1 essentia-tensorflow=="2.1b6.dev1110" deepgram-sdk==3.10.1 textstat textblob==0.17.1 alt-profanity-check==1.3.2 scikit-learn==1.3.2 xgboost==2.1.4
-
+### IMPORTANT: INSTALL NECESSARY LIBRARIES from requirements.txt ###
 ### MAKE SURE THAT MODEL AND AUDIO FILES ARE PLACED IN THE SAME FOLDER AS THE .PY ###
-
 
 import numpy as np
 import pandas as pd
 import pickle
-import essentia
 import essentia.standard as es
 from sklearn.metrics.pairwise import euclidean_distances
 
@@ -24,14 +20,17 @@ from textblob import TextBlob
 from collections import Counter
 from profanity_check import predict_prob
 
-import nltk
+from nltk.data import find
+from nltk import download
 
 
-if "nltk_download" not in st.session_state:
-    nltk.download('punkt_tab')
-    st.session_state.nltk_download = True
+def ensure_punkt():
+    try:
+        find('tokenizers/punkt')
+    except LookupError:
+        download('punkt')
 
-# pd.set_option('display.max_columns', None) # Optional for displaying in Colab
+ensure_punkt()
 
 
 def load_audio(filename):
@@ -402,166 +401,74 @@ def get_soulmate(X_pred, y_pred):
 
 
 
-### STREAMLIT ###
-
-# Seitenkonfiguration
+### INTERFACE ###
 st.set_page_config(page_title="HitPredict 🎶", layout="wide")
 st.logo("Logo.png", size="large")
 
-# Navigation
-page = st.sidebar.radio("Navigation 🎛️", ["🏠 Landingpage", "🎵 Song bewerten"])
+st.title("🎤 Lade deinen Song hoch")
 
-# CSS Styles
-st.markdown("""
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap');
+uploaded_file = st.file_uploader("🎶 Audio hochladen (MP3)", type=["mp3"])
 
-h1, h2, h3, h4, h5, body {
-font-family: 'Montserrat', sans-serif;
-}
+if uploaded_file:
+    st.audio(uploaded_file)
 
-.stButton button {
-background-color: #4CAF50;
-color: white;
-border-radius: 8px;
-font-weight: bold;
-padding: 8px 20px;
-border: none;
-cursor: pointer;
-}
+    if "df" not in st.session_state or "last_uploaded" not in st.session_state or uploaded_file != st.session_state.last_uploaded:
+        # Save uploaded file to a temporary location
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as temp_file:
+            temp_file.write(uploaded_file.read())
+            filename = temp_file.name
 
-.stButton button:hover {
-background-color: #45a049;
-}
-
-.main {
-background: linear-gradient(to right, #11998e, #38ef7d);
-padding: 20px;
-border-radius: 15px;
-color: white;
-}
-
-.brand-name {
-font-size: 28px;
-font-weight: 700;
-position: absolute;
-top: 10px;
-left: 20px;
-color: white;
-}
-</style>
-""", unsafe_allow_html=True)
-
-st.markdown("<div class='brand-name'>HitPredict 🎶</div>", unsafe_allow_html=True)
-
-# Landingpage
-if page == "🏠 Landingpage":
-    st.markdown("<div class='main'>", unsafe_allow_html=True)
-    st.title("🌟 Entdecke dein musikalisches Potenzial!")
-    st.subheader("KI-gesteuerte Analysen für deinen nächsten Hit")
-
-    st.image("https://media.giphy.com/media/l0MYGb1LuZ3n7dRnO/giphy.gif")
-
-    st.markdown("""
-    ### Warum HitPredict?
-    - 🎯 **Innovative KI-Analysen**
-    - 📈 **Ausdrucksstarke Visualisierung**
-    - 🌟 **Inspiration & Erfolg**
-    
-    ---
-    
-    ### Erfahrungsberichte
-    "Diese Plattform hat mein Songwriting auf ein neues Level gehoben!" – *T. Swift* 
-    "Absolut empfehlenswert für jeden Musiker!" – *B. Mars*
-    
-    ---
-    
-    ### Häufig gestellte Fragen
-    **Wie genau ist die Bewertung?** 
-    Modernste KI-Technologie analysiert umfassend dein Musikstück.
-    
-    **Ist HitPredict kostenlos nutzbar?** 
-    Ja, grundlegende Analysen sind kostenfrei nutzbar.
-    
-    **Was passiert mit meinen Daten?** 
-    Deine Privatsphäre ist sicher und alle Daten bleiben vertraulich.
-    """)
-
-    if st.button("🎵 Jetzt Song bewerten!"):
-        page = "🎵 Song bewerten"
-
-    st.markdown("</div>", unsafe_allow_html=True)
+        st.session_state.df = extract_features(filename)
+        st.session_state.last_uploaded = uploaded_file
 
 
-# Song bewerten Seite
-elif page == "🎵 Song bewerten":
-    st.markdown("<div class='main'>", unsafe_allow_html=True)
-    st.title("🎤 Lade deinen Song hoch")
+    st.header("📊 Metriken der Songanalyse")
 
-    uploaded_file = st.file_uploader("🎶 Audio hochladen (MP3)", type=["mp3"])
+    # Separate genre columns and feature columns
+    genre_cols = []
+    feature_cols = []
 
-    if uploaded_file:
-        st.audio(uploaded_file)
+    for column in st.session_state.df.columns:
+        if column.startswith("genre_"):
+            genre_cols.append(column.replace("genre_", ""))
+        elif column != "year":
+            feature_cols.append(column)
 
-        if "df" not in st.session_state or "last_uploaded" not in st.session_state or uploaded_file != st.session_state.last_uploaded:
-            # Save uploaded file to a temporary location
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as temp_file:
-                temp_file.write(uploaded_file.read())
-                filename = temp_file.name
+    current_genre = "other"
+    for column in genre_cols:
+        if st.session_state.df.at[0, f"genre_{column}"] == True:
+            current_genre = column
+            break
 
-            st.session_state.df = extract_features(filename)
-            st.session_state.last_uploaded = uploaded_file
+    st.metric(label="Genre", value=current_genre.capitalize())
 
-
-        st.header("📊 Metriken der Songanalyse")
-
-        # Separate genre columns and feature columns
-        genre_cols = []
-        feature_cols = []
-
-        for column in st.session_state.df.columns:
-            if column.startswith("genre_"):
-                genre_cols.append(column.replace("genre_", ""))
-            elif column != "year":
-                feature_cols.append(column)
-
-        current_genre = "other"
-        for column in genre_cols:
-            if st.session_state.df.at[0, f"genre_{column}"] == True:
-                current_genre = column
-                break
-
-        st.metric(label="Genre", value=current_genre.capitalize())
-
-        for feature in feature_cols:
-            value = st.session_state.df.loc[0, feature]
-            st.metric(label=feature.capitalize(), value=round(float(value), 2))
+    for feature in feature_cols:
+        value = st.session_state.df.loc[0, feature]
+        st.metric(label=feature.capitalize(), value=round(float(value), 2))
 
 
-        # Predict popularity
-        popularity = predict_popularity(st.session_state.df)  ###
+    # Predict popularity
+    popularity = predict_popularity(st.session_state.df)  ###
 
-        st.subheader(f"✨ Popularity Score: {popularity[0, 0]:.1f} / 100 ✨")
+    st.subheader(f"✨ Popularity Score: {popularity[0, 0]:.1f} / 100 ✨")
 
-        spotify_id = get_soulmate(st.session_state.df, popularity)  ###
+    spotify_id = get_soulmate(st.session_state.df, popularity)  ###
 
-        similar_song = get_track_info(spotify_id)
+    similar_song = get_track_info(spotify_id)
 
-        st.markdown("---")
-        col1, col2 = st.columns([2, 1])
-        with col1:
-            st.header("👫 Song Soulmate")
+    st.markdown("---")
+    col1, col2 = st.columns([2, 1])
+    with col1:
+        st.header("👫 Song Soulmate")
 
-            subcol1, subcol2, subcol3 = st.columns([3, 1, 1])
-            subcol1.subheader(f'{similar_song["artist_name"]} - {similar_song["track_name"]}')
-            subcol2.metric(label='Popularity', value=similar_song["popularity"])
-            subcol3.metric(label='Release', value=similar_song["album_release"][:4])
+        subcol1, subcol2, subcol3 = st.columns([3, 1, 1])
+        subcol1.subheader(f'{similar_song["artist_name"]} - {similar_song["track_name"]}')
+        subcol2.metric(label='Popularity', value=similar_song["popularity"])
+        subcol3.metric(label='Release', value=similar_song["album_release"][:4])
 
-            components.iframe(f"https://open.spotify.com/embed/track/{spotify_id}", height=80)
+        components.iframe(f"https://open.spotify.com/embed/track/{spotify_id}", height=80)
 
-        col2.write("")
-        col2.write("")
-        col2.write("")
-        col2.image(similar_song["album_cover_url"], width=197)
-
-        st.markdown("</div>", unsafe_allow_html=True)
+    col2.write("")
+    col2.write("")
+    col2.write("")
+    col2.image(similar_song["album_cover_url"], width=200)
