@@ -27,7 +27,7 @@ antworten['frage 3'] = st.radio(
     key="frage 3")
 
 antworten['frage 4'] = st.radio(
-    "4. Welches Unternehmen ist 2024 der größte Inhaber von Musikrechten weltweit?",
+    "4. Welches Unternehmen ist 2024 der grösste Inhaber von Musikrechten weltweit?",
     ["A) Amazon Music", "B) Universal Music Group", "C) Warner Music Group", "D) BMG"],
     key="frage 4")
 

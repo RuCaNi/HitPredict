@@ -3,6 +3,7 @@
 
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 import pickle
 import essentia.standard as es
 from sklearn.metrics.pairwise import euclidean_distances
@@ -421,42 +422,110 @@ if uploaded_file:
         st.session_state.df = extract_features(filename)
         st.session_state.last_uploaded = uploaded_file
 
+    st.divider()
 
     st.header("📊 Metriken der Songanalyse")
 
-    # Separate genre columns and feature columns
-    genre_cols = []
-    feature_cols = []
+    col1, col2 = st.columns(2)
+    with col2:
+        # Get selected genre
+        current_genre = "other"
+        for column in st.session_state.df.columns:
+            if column.startswith("genre_"):
+                if st.session_state.df.at[0, column] == True:
+                    current_genre = column.replace("genre_", "")
+                    break
 
-    for column in st.session_state.df.columns:
-        if column.startswith("genre_"):
-            genre_cols.append(column.replace("genre_", ""))
-        elif column != "year":
-            feature_cols.append(column)
+        st.metric(label="Genre", value=current_genre.capitalize())
 
-    current_genre = "other"
-    for column in genre_cols:
-        if st.session_state.df.at[0, f"genre_{column}"] == True:
-            current_genre = column
-            break
+        mapping = {0: "C", 1: "C#", 2: "D", 3: "D#", 4: "E", 5: "F",
+                   6: "F#", 7: "G", 8: "G#", 9: "A", 10: "A#", 11: "B"}
+        key = mapping.get(float(st.session_state.df["key"]), "C")
 
-    st.metric(label="Genre", value=current_genre.capitalize())
+        st.metric(label="Key", value=key)
 
-    for feature in feature_cols:
-        value = st.session_state.df.loc[0, feature]
-        st.metric(label=feature.capitalize(), value=round(float(value), 2))
+        if int(st.session_state.df["mode"]) == 1:
+            mode = "Major"
+        else:
+            mode = "Minor"
+
+        st.metric(label="Mode", value=mode)
+
+        st.metric(label="Time signature", value=f'{int(st.session_state.df["time_signature"])}/4')
+
+        st.write("")
+
+        # Predict popularity
+        popularity = predict_popularity(st.session_state.df)
+
+        st.header(f"✨ Popularity Score: {popularity[0, 0]:.1f} / 100 ✨")
+
+        if popularity <= 30:
+            st.subheader("0–30 Punkte (Kein Hit)")
+            st.markdown("**Dein Song hat noch nicht das Zeug zum Hit – aber jeder Star hat mal klein angefangen! 🌱**")
+            st.markdown("➔ Bleib dran und nutze das Feedback, um deinen Sound auf ein neues Level zu bringen. 🎛️")
+        elif popularity <= 50:
+            st.subheader("🛠️ 30–50 Punkte (Hit-Potenzial)")
+            st.markdown(
+                "**Dein Song hat starke Ansätze – Feintuning an Tanzbarkeit oder Lyrics und du bist auf Kurs! 🚀**")
+            st.markdown("➔ Manchmal reicht ein cleverer Refrain oder ein knackiger Beat, um Herzen zu erobern! 💓")
+        elif popularity <= 60:
+            st.subheader("🔥 50–60 Punkte (Wahrscheinlicher Hit)")
+            st.markdown(
+                "**Dein Song tanzt an der Schwelle zum Hit – ein Funken mehr und die Crowd wird explodieren! 🎉**")
+            st.markdown("➔ Das Fundament ist stark, jetzt brauchst du nur noch den perfekten Feinschliff. 🛠️")
+        else:
+            st.subheader("🚀 60+ Punkte (Mega-Hit)")
+            st.markdown("**Dein Track ist ein Volltreffer! Die Charts warten schon auf dich – let's go! 🔥🏆**")
+            st.markdown("➔ Bleib fokussiert, bleib echt – Hits entstehen, wenn Herzblut auf Timing trifft. ❤️⏳")
+
+    with col1:
+        df = st.session_state.df
+
+        plot_df = pd.DataFrame([{
+            'Danceability': np.clip(df['danceability'] / 0.664, 0, 1),
+            'Energy': np.clip(df['energy'] / 0.89, 0, 1),
+            'Loudness': np.clip(1 - 0.1 * (df['loudness'] / -4.791), 0, 1),  # Extra
+            'Speechiness': np.clip(df['speechiness'] / 0.75, 0, 1),  # Extra
+            'Acousticness': np.clip(df['acousticness'] / 0.453, 0, 1),
+            'Instrumentalness': np.clip(df['instrumentalness'] / 0.75, 0, 1),  # Extra
+            'Valence': np.clip(df['valence'] / 0.656, 0, 1),
+            'Tempo': np.clip(df['tempo'] / 141.057, 0, 1),
+            'Duration': np.clip(df['duration_ms'] / 269747, 0, 1),
+            'Repetition': np.clip(df['repetition'] / 0.043956, 0, 1),
+            'Readability': np.clip(df['readability'] / 16.1, 0, 1),
+            'Polarity': np.clip(df['sentiment_polarity'] / 0.15066, 0, 1),
+            'Subjectivity': np.clip(df['sentiment_subjectivity'] / 0.6, 0, 1),
+            'Explicitness': np.clip(df['explicitness'] / 0.288619, 0, 1)
+        }])
+
+        # Radar chart setup
+        labels = plot_df.columns
+        values = plot_df.iloc[0].tolist()
+        values += values[:1]  # Close the loop
+
+        angles = np.linspace(0, 2 * np.pi, len(labels), endpoint=False).tolist()
+        angles += angles[:1]
+
+        # Plot
+        fig, ax = plt.subplots(figsize=(4, 4), subplot_kw=dict(polar=True))
+        ax.plot(angles, values, color='#f8641b', linewidth=2, alpha=0.8)
+        ax.fill(angles, values, color='#f8641b', alpha=0.33)
+
+        ax.set_xticks(angles[:-1])
+        ax.set_xticklabels(labels, fontsize=6)
+        ax.set_yticklabels([])  # Hide radial scale for clarity
+
+        plt.tight_layout()
+        st.pyplot(fig=plt, use_container_width=False)
 
 
-    # Predict popularity
-    popularity = predict_popularity(st.session_state.df)  ###
-
-    st.subheader(f"✨ Popularity Score: {popularity[0, 0]:.1f} / 100 ✨")
-
-    spotify_id = get_soulmate(st.session_state.df, popularity)  ###
+    # Song Soulmate
+    spotify_id = get_soulmate(st.session_state.df, popularity)
 
     similar_song = get_track_info(spotify_id)
 
-    st.markdown("---")
+    st.divider()
     col1, col2 = st.columns([2, 1])
     with col1:
         st.header("👫 Song Soulmate")
