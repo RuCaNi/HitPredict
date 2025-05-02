@@ -11,7 +11,7 @@ def load_dataset():
 st.set_page_config(page_title="HitPredict 🎶", layout="wide")
 st.logo("Logo.png", size="large")
 
-st.title("🎵 Über HitPredict")
+st.title("🔍 Deep-dive - Über HitPredict")
 
 st.markdown("""
 HitPredict ist eine datengetriebene Applikation, die es Künstlern und Produzenten ermöglicht, das Erfolgspotenzial eines Songs objektiv einzuschätzen – noch bevor dieser offiziell veröffentlicht wird!  
@@ -20,7 +20,7 @@ Im Zentrum des Tools stehen moderne Methoden der Audio- und Textanalyse sowie ma
 ---
 """)
 
-st.subheader("🔍 Analyseprozess")
+st.subheader("📊 Analyseprozess")
 
 st.markdown("""
 Der Analyseprozess beginnt, sobald ein Nutzer eine Audiodatei – im MP3-Format – auf unserer Plattform hochlädt.  

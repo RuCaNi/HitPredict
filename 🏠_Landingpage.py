@@ -12,12 +12,12 @@ st.markdown("""
 <style>
 /* Override Streamlit's main content background */
 [data-testid="stAppViewContainer"] {
-    background: linear-gradient(to right, #6bed99, #4de8c1);
+    background: linear-gradient(to left, #fa9237, #f5cb40);
 }
 
 /* Buttons */
 .stButton button {
-    background-color: #4CAF50;
+    background-color: #f8641b;
     color: white;
     border-radius: 8px;
     font-weight: bold;
@@ -27,17 +27,7 @@ st.markdown("""
 }
 
 .stButton button:hover {
-    background-color: #45a049;
-}
-
-/* Brand name on top */
-.brand-name {
-    font-size: 28px;
-    font-weight: 700;
-    position: absolute;
-    top: 10px;
-    left: 20px;
-    color: white;
+    color: black;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -70,7 +60,8 @@ with col2:
      "https://media1.tenor.com/m/jQEfimz3kbsAAAAd/putting-on-repeat-this-is-my-jam.gif",
      "https://media1.tenor.com/m/QkAMUD6roPMAAAAd/spongebob-best-song-ever.gif",
      "https://media1.tenor.com/m/xiSmAeQc50UAAAAd/dancing-john-legend.gif",
-     "https://media1.tenor.com/m/u01J4W6IXO8AAAAd/push-the-button-the-voice.gif"]), width=500)
+     "https://media1.tenor.com/m/u01J4W6IXO8AAAAd/push-the-button-the-voice.gif",
+     "https://media1.tenor.com/m/xStyNwaJfZsAAAAd/trump-wins-trump-2024.gif"]), width=500)
 
 st.divider()
 
@@ -80,7 +71,7 @@ st.subheader("🚀 Wie funktioniert das?")
 st.markdown("""
 Wenn du deinen Song bei uns hochlädst, passiert richtig viel Magie:
 - Wir analysieren dein Stück auf Herz und Nieren – Tempo, Tanzbarkeit, Stimmung, Lyrics, Emotionen – einfach alles, was einen Song einzigartig macht.
-- Dann vergleichen wir dein Werk mit einer gigantischen Datenbank von über **600.000 Songs**.
+- Dann vergleichen wir dein Werk mit einer gigantischen Datenbank von über **560.000 Songs**.
 - Dazu nutzen wir **Machine Learning** (klingt kompliziert, aber heisst nur: unser System \"versteht\" automatisch, was einen Hit ausmacht).
 """)
 

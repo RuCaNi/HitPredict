@@ -84,7 +84,7 @@ def compute_genre(embeddings):
     avg_probs[4] *= 0.1  # Adjustment for overweight on 'electronic'
     avg_probs[11] *= 0.1  # Adjustment for overweight on 'metal'
     avg_probs[28] *= 0.1  # Adjustment for overweight on 'ambient'
-    avg_probs[1] *= 3  # Adjustment for underweight on 'pop'
+    avg_probs[1] *= 2  # Adjustment for underweight on 'pop'
 
     genre = mapping[np.argmax(avg_probs)]  # Select genre with the highest probability
 
@@ -244,12 +244,12 @@ def explicitness_check(text):
 @st.cache_data(show_spinner=False)
 def extract_features(filename):
     """Extract audio and lyric features and return as a DataFrame."""
-    with st.status("Analyzing Audio...", expanded=True) as status:
-        st.write("Loading Audio")
+    with st.status("Analysiere Audio...", expanded=True) as status:
+        st.write("Lade Audio...")
         audio, sample_rate = load_audio(filename)
-        st.write("Preparing for Machine Learning")
+        st.write("Bereite Machine Learning vor...")
         embeddings = load_model(audio)
-        st.write("Computing Audio Features")
+        st.write("Berechne Audio-Metriken...")
         duration_ms = compute_duration(audio, sample_rate)
         genre = compute_genre(embeddings)
         tempo, beats = compute_rhythm_features(audio)
@@ -261,9 +261,10 @@ def extract_features(filename):
         instrumentalness, speechiness = compute_instrumental_and_speech(embeddings)
         valence = compute_valence(embeddings)
         time_signature = compute_time_signature(audio, beats, sample_rate)
-        st.write("Transcribing Lyrics (∼1 minute)")
+        st.write("Transkribiere Songtexte... (via API, ∼1 Minute)")
+        st.write("*Probiere doch unser [Musik-Quiz](Musik-Quiz), während du wartest?*")
         lyrics = transcribe_lyrics(filename)
-        st.write("Computing Textual Features")
+        st.write("Berechne textbasierte Metriken...")
         repetition = ngram_repetition(lyrics)
         readability = readability_check(lyrics)
         sentiment_polarity, sentiment_subjectivity = analyze_sentiment(lyrics)
@@ -318,7 +319,7 @@ def extract_features(filename):
         df[f"genre_{genre}"] = True  # Mark detected genre as True
 
         status.update(
-            label="Analysis complete!", state="complete", expanded=False
+            label="Analyse erfolgreich!", state="complete", expanded=False
         )
 
     return df
@@ -424,7 +425,7 @@ if uploaded_file:
 
     st.divider()
 
-    st.header("📊 Metriken der Songanalyse")
+    st.header("📈 Metriken der Songanalyse")
 
     col1, col2 = st.columns(2)
     with col2:
@@ -440,25 +441,23 @@ if uploaded_file:
 
         mapping = {0: "C", 1: "C#", 2: "D", 3: "D#", 4: "E", 5: "F",
                    6: "F#", 7: "G", 8: "G#", 9: "A", 10: "A#", 11: "B"}
-        key = mapping.get(float(st.session_state.df["key"]), "C")
+        key = mapping.get(float(st.session_state.df["key"].iloc[0]), "C")
 
-        st.metric(label="Key", value=key)
-
-        if int(st.session_state.df["mode"]) == 1:
-            mode = "Major"
+        if int(st.session_state.df["mode"].iloc[0]) == 1:
+            mode = "Dur"
         else:
-            mode = "Minor"
+            mode = "Moll"
 
-        st.metric(label="Mode", value=mode)
+        st.metric(label="Tonart", value=f"{key}-{mode}")
 
-        st.metric(label="Time signature", value=f'{int(st.session_state.df["time_signature"])}/4')
+        st.metric(label="Taktart", value=f'{int(st.session_state.df["time_signature"].iloc[0])}/4')
 
         st.write("")
 
         # Predict popularity
         popularity = predict_popularity(st.session_state.df)
 
-        st.header(f"✨ Popularity Score: {popularity[0, 0]:.1f} / 100 ✨")
+        st.header(f"✨ Popularity Score: {float(popularity.item()):.1f} / 100 ✨")
 
         if popularity <= 30:
             st.subheader("0–30 Punkte (Kein Hit)")
@@ -510,7 +509,7 @@ if uploaded_file:
         # Plot
         fig, ax = plt.subplots(figsize=(4, 4), subplot_kw=dict(polar=True))
         ax.plot(angles, values, color='#f8641b', linewidth=2, alpha=0.8)
-        ax.fill(angles, values, color='#f8641b', alpha=0.33)
+        ax.fill(angles, values, color='#f8641b', alpha=0.4)
 
         ax.set_xticks(angles[:-1])
         ax.set_xticklabels(labels, fontsize=6)
