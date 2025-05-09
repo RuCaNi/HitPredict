@@ -28,7 +28,7 @@ aktuelle_antworten["frage 1"] = st.radio(
 
 if aktuelle_antworten["frage 1"]:
     if st.button("Prüfen", key="prüfen_1"):
-        fakt = "Spotify hatte im ersten Quartal 2025 rund 268 Millionen Premium Abonnenten."
+        fakt = "Spotify hatte im ersten Quartal 2025 rund 268 Millionen Premium-Abonnenten."
 
         if aktuelle_antworten["frage 1"] == richtige_antworten["frage 1"]:
             st.success(f"Richtig! ✅ {fakt}")

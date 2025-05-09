@@ -80,10 +80,11 @@ def compute_genre(embeddings):
         if mapping[i] not in common_genres:
             avg_probs[i] = 0.0  # Set the probabilities for all genre's neither in spotify's nor essentia's data to zero
 
-    avg_probs[0] *= 0.1  # Adjustment for overweight on 'rock'
-    avg_probs[4] *= 0.1  # Adjustment for overweight on 'electronic'
-    avg_probs[11] *= 0.1  # Adjustment for overweight on 'metal'
-    avg_probs[28] *= 0.1  # Adjustment for overweight on 'ambient'
+    avg_probs[0] *= 0.2  # Adjustment for overweight on 'rock'
+    avg_probs[4] *= 0.2  # Adjustment for overweight on 'electronic'
+    avg_probs[9] *= 0.5  # Adjustment for overweight on 'jazz'
+    avg_probs[11] *= 0.2  # Adjustment for overweight on 'metal'
+    avg_probs[28] *= 0.2  # Adjustment for overweight on 'ambient'
     avg_probs[1] *= 2  # Adjustment for underweight on 'pop'
 
     genre = mapping[np.argmax(avg_probs)]  # Select genre with the highest probability
