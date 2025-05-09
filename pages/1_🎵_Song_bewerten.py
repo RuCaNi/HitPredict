@@ -491,9 +491,9 @@ if "df" in st.session_state:
 
     with col1:
         plot_df = pd.DataFrame([{
-                'Danceability': np.clip(df['danceability']/0.664, 0, 1),
                 'Energy': np.clip(df['energy']/0.89, 0, 1),
                 'Loudness': np.clip(1-0.1*(df['loudness']/-4.791), 0, 1), # Extra
+                'Danceability': np.clip(df['danceability'] / 0.664, 0, 1),
                 'Speechiness': np.clip(df['speechiness']/0.75, 0, 1), # Extra
                 'Acousticness': np.clip(df['acousticness']/0.453, 0, 1),
                 'Instrumentalness': np.clip(df['instrumentalness']/0.75, 0, 1), # Extra
@@ -519,6 +519,9 @@ if "df" in st.session_state:
         fig, ax = plt.subplots(figsize=(5, 5), subplot_kw=dict(polar=True))
         ax.plot(angles, values, color='#f8641b', linewidth=1.5)
         ax.fill(angles, values, color='#f8641b', alpha=0.4)
+
+        # Set fixed range between 0 and 1
+        ax.set_ylim(0, 1)
 
         # Custom label placement
         label_distance = 1.15  # Distance multiplier (1.0 is the edge of the plot)
