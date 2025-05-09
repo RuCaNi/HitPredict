@@ -3,7 +3,7 @@ import random
 
 
 # Seitenkonfiguration
-st.set_page_config(page_title="HitPredict 🎶", layout="wide")
+st.set_page_config(page_title="HitPredict 🎶", layout="wide", page_icon="favicon.png")
 st.logo("Logo.png", size="large")
 
 

@@ -8,8 +8,9 @@ def load_dataset():
     return df
 
 
-st.set_page_config(page_title="HitPredict 🎶", layout="wide")
+st.set_page_config(page_title="HitPredict 🎶", layout="wide", page_icon="favicon.png")
 st.logo("Logo.png", size="large")
+
 
 st.title("🔍 Deep-dive - Über HitPredict")
 
@@ -66,7 +67,7 @@ st.divider()
 
 st.subheader("🧠 Machine Learning Modell")
 st.markdown("""Um Machine Learning Modelle zu trainieren, haben wir zunächst einige Ausreisser entfernt, 
-wie z.B. Songs mit einer Time signature von 0 (173 Stück). Ausserdem haben wir One-Hot Encoding für die Genres angewendet, 
+wie bspw. Songs mit einer Time signature von null. Ausserdem haben wir One-Hot Encoding für die Genres angewendet, 
 damit diese als numerische Werte für das Modell lesbar sind. Zudem wurden alle Werte mit dem scikit-learn Standardscaler standardisiert.
 
 - **X**: Alle Metriken exkl. Popularity
@@ -84,7 +85,7 @@ ml_results = pd.DataFrame({
     "LinReg Ridge": ["12.25", "9.69"],
     "LinReg Lasso": ["12.25", "9.69"],
     "Random Forest": ["11.44", "8.99"],
-    "**XGBoost**": ["**11.38**", "**8.93**"],
+    "**XGBoost**": ["**11.35**", "**8.91**"],
     "Neural Network": ["11.42", "9.04"],
     },
 index=["RMSE", "MAE"]
@@ -99,28 +100,34 @@ col1, col2 = st.columns(2)
 
 with col1:
     st.subheader("❗ Wichtigkeit der Features")
-    st.image("img/Feature Importance XGBoost.png", width=750)
+    st.image("img/XGBoost Feature Importance.png")
 
     st.markdown("""
     Anhand der **Feature-Importance** erkennt man, welche Metriken bei der Popularity-Vorhersage am wichtigsten sind.
     
-    **Achtung**: Dies zeigt lediglich, wie stark die einzelnen Metriken berücksichtigt werden.
-    Über einen positiven/negativen Einfluss kann keine Aussage gemacht werden.
     - Genre
     - Year
     - Instrumentalness
     - Danceability
+    
+    **Achtung**: Dies zeigt lediglich, wie stark die einzelnen Metriken berücksichtigt werden.
+    Über einen positiven/negativen Einfluss kann keine Aussage gemacht werden.
     """)
 
 with col2:
     st.subheader("🎯 Genauigkeit unseres Modells")
-    st.image("img/XGBoost Accuracy.png", width=600)
+    st.image("img/XGBoost Accuracy.png")
 
     st.markdown("""
     Die **Genauigkeit** unseres Modells haben wir ebenfalls visualisiert.
     
     Hier erkennt man, dass das Modell **niedrige Werte überschätzt**, während es **hohe Werte überschätzt**.
     Das Modell bewegt sich so im Zweifel weg von den Extremen, um hohe Fehler zu vermeiden.
+    
+    Zudem nimmt die **Streuung** zu, je höher der tatsächliche Popularity Score ist.
+    Dies liegt daran, dass gerade einmal 3% der Songs einen Score über 60 haben und es somit wenig Trainingsdaten für hohe Scores gibt.
+    
+    Der **strikt steigende Verlauf** lässt jedoch erkennen, dass das Modell bei der Vorhersage klar einen **Trend** identifizieren kann.
     """)
 
 st.divider()
@@ -151,6 +158,8 @@ Die textbasierten Metriken werden mit den selben Methoden berechnet, wie für de
 - [**TextBlob**](https://textblob.readthedocs.io/en/dev/): Repetition, Polarity, Subjectivity
 - [**Textstat**](https://textstat.org/): Readability
 - [**profanity-check**](https://github.com/vzhou842/profanity-check): Explicitness
+
+Nun erfolgt die Vorhersage des Popularity Scores anhand des trainierten XGBoost Modells.
 """)
 
 st.divider()
@@ -173,7 +182,7 @@ with col1:
     """)
 
 with col2:
-    st.image("img/Popularity Distribution.png")
+    st.image("img/Popularity Score Distribution.png")
 
 st.divider()
 

@@ -189,18 +189,21 @@ def compute_time_signature(audio, beats, sample_rate):
 
 def transcribe_lyrics(filename):
     """Transcribe lyrics from audio using the Deepgram API with OpenAI Whisper."""
-    deepgram = DeepgramClient(st.secrets["DG_TOKEN"])
+    try:
+        deepgram = DeepgramClient(st.secrets["DG_TOKEN"])
 
-    with open(filename, 'rb') as buffer_data:  # API request according to Deepgram's docs
-        payload = { 'buffer': buffer_data }
+        with open(filename, 'rb') as buffer_data:  # API request according to Deepgram's docs
+            payload = {'buffer': buffer_data}
+            options = PrerecordedOptions(smart_format=True, model="whisper")
 
-        options = PrerecordedOptions(
-            smart_format=True, model="whisper"
-        )
+            response = deepgram.listen.rest.v('1').transcribe_file(payload, options, timeout=600)
 
-        response = deepgram.listen.rest.v('1').transcribe_file(payload, options, timeout=600)
+        transcription = response["results"]["channels"][0]["alternatives"][0]["transcript"]
 
-    transcription = response["results"]["channels"][0]["alternatives"][0]["transcript"]
+    except:
+        st.error("Die Lyrics konnten nicht transkribiert werden. Der Song wird als Instrumental ausgewertet.")
+        transcription = "False"
+
     return transcription
 
 
@@ -244,6 +247,8 @@ def explicitness_check(text):
 @st.cache_data(show_spinner=False)
 def extract_features(filename):
     """Extract audio and lyric features and return as a DataFrame."""
+    st.write("*Probiere doch unser [Musik-Quiz](Musik-Quiz), während du wartest?*")
+
     with st.status("Analysiere Audio...", expanded=True) as status:
         st.write("Lade Audio...")
         audio, sample_rate = load_audio(filename)
@@ -262,7 +267,6 @@ def extract_features(filename):
         valence = compute_valence(embeddings)
         time_signature = compute_time_signature(audio, beats, sample_rate)
         st.write("Transkribiere Songtexte... (via API, ∼1 Minute)")
-        st.write("*Probiere doch unser [Musik-Quiz](Musik-Quiz), während du wartest?*")
         lyrics = transcribe_lyrics(filename)
         st.write("Berechne textbasierte Metriken...")
         repetition = ngram_repetition(lyrics)
@@ -328,7 +332,7 @@ def extract_features(filename):
 @st.cache_data(show_spinner=False)
 def predict_popularity(df):
     """Predict popularity using a prepared machine learning model."""
-    with open("xgboost_v4.pkl", "rb") as file:
+    with open("xgboost_v5.pkl", "rb") as file:
         model = pickle.load(file)
     with open("X_scaler.pkl", "rb") as file:
         X_scaler = pickle.load(file)
@@ -343,7 +347,7 @@ def predict_popularity(df):
 
 
 @st.cache_data(show_spinner=False)
-def get_track_info(track_id): ###
+def get_track_info(track_id):
     """Initialize Spotify client, search for a track, and return its info."""
     sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(
         client_id=st.secrets["SP_CLIENT_ID"],
@@ -364,13 +368,13 @@ def get_track_info(track_id): ###
 @st.cache_data(show_spinner=False)
 def load_dataset():
     df = pd.read_csv("spotify_data_similarity.csv", index_col=0)
-    df = pd.get_dummies(df, columns=['genre'])
     return df
 
 
 @st.cache_data(show_spinner=False)
 def get_soulmate(X_pred, y_pred):
-    data = load_dataset()
+    df = load_dataset()
+    data = pd.get_dummies(df, columns=['genre'])
 
     # Load scalers
     with open("X_scaler.pkl", "rb") as f:
@@ -404,7 +408,7 @@ def get_soulmate(X_pred, y_pred):
 
 
 ### INTERFACE ###
-st.set_page_config(page_title="HitPredict 🎶", layout="wide")
+st.set_page_config(page_title="HitPredict 🎶", layout="wide", page_icon="favicon.png")
 st.logo("Logo.png", size="large")
 
 st.title("🎤 Lade deinen Song hoch")
@@ -414,88 +418,92 @@ uploaded_file = st.file_uploader("🎶 Audio hochladen (MP3)", type=["mp3"])
 if uploaded_file:
     st.audio(uploaded_file)
 
-    if "df" not in st.session_state or "last_uploaded" not in st.session_state or uploaded_file != st.session_state.last_uploaded:
-        # Save uploaded file to a temporary location
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as temp_file:
-            temp_file.write(uploaded_file.read())
-            filename = temp_file.name
+    # Save uploaded file to a temporary location
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as temp_file:
+        temp_file.write(uploaded_file.read())
+        filename = temp_file.name
 
-        st.session_state.df = extract_features(filename)
-        st.session_state.last_uploaded = uploaded_file
+    st.session_state.df = extract_features(filename)
+
+
+if "df" in st.session_state:
+    df = st.session_state.df
 
     st.divider()
-
     st.header("📈 Metriken der Songanalyse")
 
     col1, col2 = st.columns(2)
+
     with col2:
         # Get selected genre
         current_genre = "other"
-        for column in st.session_state.df.columns:
+        for column in df.columns:
             if column.startswith("genre_"):
-                if st.session_state.df.at[0, column] == True:
+                if df.at[0, column] == True:
                     current_genre = column.replace("genre_", "")
                     break
 
         st.metric(label="Genre", value=current_genre.capitalize())
 
-        mapping = {0: "C", 1: "C#", 2: "D", 3: "D#", 4: "E", 5: "F",
+        mapping = {0: "C",  1: "C#", 2: "D", 3: "D#", 4: "E", 5: "F",
                    6: "F#", 7: "G", 8: "G#", 9: "A", 10: "A#", 11: "B"}
-        key = mapping.get(float(st.session_state.df["key"].iloc[0]), "C")
+        key = mapping.get(float(df["key"].iloc[0]), "C")
 
-        if int(st.session_state.df["mode"].iloc[0]) == 1:
+        if int(df["mode"].iloc[0]) == 1:
             mode = "Dur"
         else:
             mode = "Moll"
 
         st.metric(label="Tonart", value=f"{key}-{mode}")
 
-        st.metric(label="Taktart", value=f'{int(st.session_state.df["time_signature"].iloc[0])}/4')
+        st.metric(label="Taktart", value=f'{int(df["time_signature"].iloc[0])}/4')
 
         st.write("")
 
         # Predict popularity
-        popularity = predict_popularity(st.session_state.df)
+        popularity = predict_popularity(df)
+        popularity_score = float(popularity.item())
 
-        st.header(f"✨ Popularity Score: {float(popularity.item()):.1f} / 100 ✨")
+        st.header(f"✨ Popularity Score: {popularity_score:.1f} / 100 ✨")
+
+        dataset = load_dataset()
+
+        percentrank = (len(dataset[dataset['popularity'] >= popularity_score]) / len(dataset))*100
 
         if popularity <= 30:
-            st.subheader("0–30 Punkte (Kein Hit)")
+            st.subheader(f"Top {percentrank:.1f}% (Kein Hit)")
             st.markdown("**Dein Song hat noch nicht das Zeug zum Hit – aber jeder Star hat mal klein angefangen! 🌱**")
             st.markdown("➔ Bleib dran und nutze das Feedback, um deinen Sound auf ein neues Level zu bringen. 🎛️")
         elif popularity <= 50:
-            st.subheader("🛠️ 30–50 Punkte (Hit-Potenzial)")
-            st.markdown(
-                "**Dein Song hat starke Ansätze – Feintuning an Tanzbarkeit oder Lyrics und du bist auf Kurs! 🚀**")
+            st.subheader(f"🛠️ Top {percentrank:.1f}% (Hit-Potenzial)")
+            st.markdown("**Dein Song hat starke Ansätze – Feintuning an Tanzbarkeit oder Lyrics und du bist auf Kurs! 🚀**")
             st.markdown("➔ Manchmal reicht ein cleverer Refrain oder ein knackiger Beat, um Herzen zu erobern! 💓")
         elif popularity <= 60:
-            st.subheader("🔥 50–60 Punkte (Wahrscheinlicher Hit)")
-            st.markdown(
-                "**Dein Song tanzt an der Schwelle zum Hit – ein Funken mehr und die Crowd wird explodieren! 🎉**")
+            st.subheader(f"🔥 Top {percentrank:.1f}% (Wahrscheinlicher Hit)")
+            st.markdown("**Dein Song tanzt an der Schwelle zum Hit – ein Funken mehr und die Crowd wird explodieren! 🎉**")
             st.markdown("➔ Das Fundament ist stark, jetzt brauchst du nur noch den perfekten Feinschliff. 🛠️")
         else:
-            st.subheader("🚀 60+ Punkte (Mega-Hit)")
+            st.subheader(f"🚀 Top {percentrank:.1f}% (Mega-Hit)")
             st.markdown("**Dein Track ist ein Volltreffer! Die Charts warten schon auf dich – let's go! 🔥🏆**")
             st.markdown("➔ Bleib fokussiert, bleib echt – Hits entstehen, wenn Herzblut auf Timing trifft. ❤️⏳")
 
-    with col1:
-        df = st.session_state.df
 
+    with col1:
         plot_df = pd.DataFrame([{
-            'Danceability': np.clip(df['danceability'] / 0.664, 0, 1),
-            'Energy': np.clip(df['energy'] / 0.89, 0, 1),
-            'Loudness': np.clip(1 - 0.1 * (df['loudness'] / -4.791), 0, 1),  # Extra
-            'Speechiness': np.clip(df['speechiness'] / 0.75, 0, 1),  # Extra
-            'Acousticness': np.clip(df['acousticness'] / 0.453, 0, 1),
-            'Instrumentalness': np.clip(df['instrumentalness'] / 0.75, 0, 1),  # Extra
-            'Valence': np.clip(df['valence'] / 0.656, 0, 1),
-            'Tempo': np.clip(df['tempo'] / 141.057, 0, 1),
-            'Duration': np.clip(df['duration_ms'] / 269747, 0, 1),
-            'Repetition': np.clip(df['repetition'] / 0.043956, 0, 1),
-            'Readability': np.clip(df['readability'] / 16.1, 0, 1),
-            'Polarity': np.clip(df['sentiment_polarity'] / 0.15066, 0, 1),
-            'Subjectivity': np.clip(df['sentiment_subjectivity'] / 0.6, 0, 1),
-            'Explicitness': np.clip(df['explicitness'] / 0.288619, 0, 1)
+                'Danceability': np.clip(df['danceability']/0.664, 0, 1),
+                'Energy': np.clip(df['energy']/0.89, 0, 1),
+                'Loudness': np.clip(1-0.1*(df['loudness']/-4.791), 0, 1), # Extra
+                'Speechiness': np.clip(df['speechiness']/0.75, 0, 1), # Extra
+                'Acousticness': np.clip(df['acousticness']/0.453, 0, 1),
+                'Instrumentalness': np.clip(df['instrumentalness']/0.75, 0, 1), # Extra
+                'Valence': np.clip(df['valence']/0.656, 0, 1),
+                'Tempo': np.clip(df['tempo']/141.057, 0, 1),
+                'Duration': np.clip(df['duration_ms']/269747, 0, 1),
+                'Repetition': np.clip(df['repetition']/0.043956, 0, 1),
+                'Readability': np.clip(df['readability']/16.1, 0, 1),
+                'Polarity': np.clip(df['sentiment_polarity']/0.15066, 0, 1),
+                'Subjectivity': np.clip(df['sentiment_subjectivity']/0.6, 0, 1),
+                'Explicitness': np.clip(df['explicitness']/0.288619, 0, 1)
         }])
 
         # Radar chart setup
@@ -507,20 +515,27 @@ if uploaded_file:
         angles += angles[:1]
 
         # Plot
-        fig, ax = plt.subplots(figsize=(4, 4), subplot_kw=dict(polar=True))
-        ax.plot(angles, values, color='#f8641b', linewidth=2, alpha=0.8)
+        fig, ax = plt.subplots(figsize=(5, 5), subplot_kw=dict(polar=True))
+        ax.plot(angles, values, color='#f8641b', linewidth=1.5)
         ax.fill(angles, values, color='#f8641b', alpha=0.4)
 
+        # Custom label placement
+        label_distance = 1.15  # Distance multiplier (1.0 is the edge of the plot)
+        for i in range(len(labels)):
+            angle = angles[i]
+            label = labels[i]
+            ax.text(angle, label_distance, label, ha='center', va='center', fontsize=7)
+
+        # Keep ticks for gridlines, but hide labels
         ax.set_xticks(angles[:-1])
-        ax.set_xticklabels(labels, fontsize=6)
-        ax.set_yticklabels([])  # Hide radial scale for clarity
+        ax.set_xticklabels([''] * len(labels))
+        ax.set_yticklabels([])
 
         plt.tight_layout()
         st.pyplot(fig=plt, use_container_width=False)
 
 
-    # Song Soulmate
-    spotify_id = get_soulmate(st.session_state.df, popularity)
+    spotify_id = get_soulmate(df, popularity)
 
     similar_song = get_track_info(spotify_id)
 
