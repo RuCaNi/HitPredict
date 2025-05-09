@@ -14,21 +14,6 @@ st.markdown("""
 [data-testid="stAppViewContainer"] {
     background: linear-gradient(to left, #fa9237, #f5cb40);
 }
-
-/* Buttons */
-.stButton button {
-    background-color: #f8641b;
-    color: white;
-    border-radius: 8px;
-    font-weight: bold;
-    padding: 8px 20px;
-    border: none;
-    cursor: pointer;
-}
-
-.stButton button:hover {
-    color: black;
-}
 </style>
 """, unsafe_allow_html=True)
 
@@ -102,5 +87,5 @@ st.divider()
 
 st.markdown("#### HitPredict: *Know your hit before it’s heard.*")
 
-if st.button("🎵 Jetzt Song bewerten!"):
+if st.button("🎵 Jetzt Song bewerten!", type="primary"):
     st.switch_page("pages/1_🎵_Song_bewerten.py")
