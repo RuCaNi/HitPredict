@@ -1,34 +1,50 @@
+#
+# HitPredict - Ein Projekt für 'Grundlagen und Methoden der Informatik für Wirtschaftswissenschaften' an der Universität St.Gallen (2025)
+# Autoren: Ruben Cardell, Adam Bisharat, Helena Häußler, Colin Wirth
+# ---
+# HINWEIS: Das Herz des Projektes befindet sich in pages/1_🎵_Song_bewerten.py
+# ---
+# ACHTUNG: Installation
+# 1. Es müssen alle Libraries in exakt der richtigen Version aus requirements.txt installiert werden
+# 2. Die App benötigt Python 3.11
+# 3. Die Essentia Modelldateien müssen im gleichen Verzeichnis wie die Landingpage.py Datei sein
+# 4. Es kann Fehler beim Ausführen geben, wenn die Packages mit einer falschen Numpy Version kompiliert werden
+# !!! Wir empfehlen, die App auf https://hitpredict.streamlit.app/ anzuschauen !!!
+#
+
+# Importe
 import streamlit as st
 import random
 
 
-# Seitenkonfiguration
+# Streamlit Konfiguration
 st.set_page_config(page_title="HitPredict 🎶", layout="wide", page_icon="favicon.png")
 st.logo("Logo.png", size="large")
 
 
-# CSS Styles
+# Farbverlauf als Hintergrund
 st.markdown("""
 <style>
-/* Override Streamlit's main content background */
 [data-testid="stAppViewContainer"] {
     background: linear-gradient(to left, #fa9237, #f5cb40);
-}
+    }
 </style>
 """, unsafe_allow_html=True)
 
 
-# Landingpage
+# Titel
 st.title("HitPredict 🌟 Entdecke dein musikalisches Potenzial!")
 
-col1, col2 = st.columns([0.7,0.3])
+
+# Abschnitt: Business Problem
+col1, col2 = st.columns([0.7,0.3])  # Spaltenbreite 70%-30%
 with col1:
     st.subheader("Was wäre, wenn du schon vor dem Release wissen könntest, wie dein neuer Song ankommt?")
     st.markdown("""
     Egal ob du Artist, Manager, Label oder Verlag bist – du kennst das Problem:
     - **Welche Single soll zuerst raus? In welchen Song steckst du dein Marketingbudget?** Und wie sicher bist du wirklich, dass dein Track das Zeug zum Hit hat?
     
-    #### 💸 Musikbusiness heisst Risiko. Produktion, Mix, Mastering, Promo – alles kostet Geld, Zeit und Energie.\n
+    #### 💸 Musikbusiness heisst Risiko. Produktion, Mix, Mastering, Promo – alles kostet Geld, Zeit und Energie.
     Und trotzdem bleibt immer dieses kleine Fragezeichen: **Wird der Song durchstarten oder einfach untergehen?**
     
     - Genau hier hilft dir **HitPredict**. Mit einem einzigen Upload bekommst du eine **klare, datenbasierte Einschätzung**, wie viel Potenzial dein Song hat. 
@@ -38,6 +54,7 @@ with col1:
     """)
 
 with col2:
+    # Zufällige Auswahl aus handverlesenen Musik-GIFs
     st.image(random.choice(["https://media1.tenor.com/m/9SFSfC2n0lkAAAAd/head-phones-music.gif",
      "https://media1.tenor.com/m/8DDZDteRUFgAAAAd/muzeke.gif",
      "https://media1.tenor.com/m/qysazDtt3xAAAAAC/the-simpsons-dancing.gif",
@@ -51,7 +68,7 @@ with col2:
 st.divider()
 
 
-# Section: Wie funktioniert das?
+# Abschnitt: Wie funktioniert das?
 st.subheader("🚀 Wie funktioniert das?")
 st.markdown("""
 Wenn du deinen Song bei uns hochlädst, passiert richtig viel Magie:
@@ -60,7 +77,8 @@ Wenn du deinen Song bei uns hochlädst, passiert richtig viel Magie:
 - Dazu nutzen wir **Machine Learning** (klingt kompliziert, aber heisst nur: unser System \"versteht\" automatisch, was einen Hit ausmacht).
 """)
 
-# Section: Und dann?
+
+# Abschnitt: Und dann?
 st.subheader("🎵 Und dann?")
 st.markdown("""
 Unser intelligenter Algorithmus – powered by einem Profi-Tool namens **XGBoost** – sagt dir, wie hoch dein Erfolgspotenzial ist.
@@ -68,7 +86,8 @@ Unser intelligenter Algorithmus – powered by einem Profi-Tool namens **XGBoost
 Du bekommst einen **Score zwischen 0 und 100** – je höher, desto näher bist du dem nächsten grossen Hit!
 """)
 
-# Section: Warum ist das cool?
+
+# Abschnitt: Warum ist das cool?
 st.subheader("🎯 Warum ist das cool?")
 st.markdown("""
 - Du bekommst ehrliches, datenbasiertes Feedback.
@@ -78,14 +97,25 @@ st.markdown("""
 
 st.divider()
 
+
+# Abschnitt: Erfahrungsberichte
 st.markdown("### Erfahrungsberichte")
-st.markdown('> "Früher musste ich auf mein Bauchgefühl hören. Jetzt höre ich auf HitPredict. Der Score hat mir bei meinem letzten Album geholfen, die perfekten Singles auszuwählen. Und ja – er lag jedes Mal richtig!" – *T. Swift*')
-st.markdown('> "Normalerweise freestyle ich alles – aber HitPredict hat sogar meinen besten Freestyle korrekt vorhergesagt. Score 89! Respekt, Maschine." - *Eminem*')
-st.markdown('> "Als DJ musst du wissen, welcher Track das Publikum komplett ausrasten lässt. HitPredict hat mir geholfen, die absoluten Banger für meine nächste Tour zu identifizieren. Kein Blindflug mehr." – *D. Guetta*')
+st.markdown('''> "Früher musste ich auf mein Bauchgefühl hören. Jetzt höre ich auf HitPredict. 
+Der Score hat mir bei meinem letzten Album geholfen, die perfekten Singles auszuwählen. Und ja – er lag jedes Mal richtig!" – *T. Swift*''')
+
+st.markdown('''> "Normalerweise freestyle ich alles – aber HitPredict hat sogar meinen besten Freestyle korrekt vorhergesagt. 
+Score 89! Respekt, Maschine." - *Eminem*''')
+
+st.markdown('''> "Als DJ musst du wissen, welcher Track das Publikum komplett ausrasten lässt. 
+HitPredict hat mir geholfen, die absoluten Banger für meine nächste Tour zu identifizieren. Kein Blindflug mehr." – *D. Guetta*''')
 
 st.divider()
 
+
+# Slogan
 st.markdown("#### HitPredict: *Know your hit before it’s heard.*")
 
+
+# Button zur Song bewerten Seite
 if st.button("🎵 Jetzt Song bewerten!", type="primary"):
     st.switch_page("pages/1_🎵_Song_bewerten.py")

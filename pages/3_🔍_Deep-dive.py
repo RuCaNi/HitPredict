@@ -1,17 +1,41 @@
+#
+# HitPredict - Ein Projekt für 'Grundlagen und Methoden der Informatik für Wirtschaftswissenschaften' an der Universität St.Gallen (2025)
+# Autoren: Ruben Cardell, Adam Bisharat, Helena Häußler, Colin Wirth
+# ---
+# HINWEIS: Das Herz des Projektes befindet sich in pages/1_🎵_Song_bewerten.py
+# ---
+# ACHTUNG: Installation
+# 1. Es müssen alle Libraries in exakt der richtigen Version aus requirements.txt installiert werden
+# 2. Die App benötigt Python 3.11
+# 3. Die Essentia Modelldateien müssen im gleichen Verzeichnis wie die Landingpage.py Datei sein
+# 4. Es kann Fehler beim Ausführen geben, wenn die Packages mit einer falschen Numpy Version kompiliert werden
+# !!! Wir empfehlen, die App auf https://hitpredict.streamlit.app/ anzuschauen !!!
+#
+
+# Importe
 import streamlit as st
 import pandas as pd
 
 
+# Cache für schnelleres Laden beim Seitenwechsel
 @st.cache_data(show_spinner=False)
 def load_dataset():
+    """
+    Lädt jede 5000ste Zeile und die Spaltennamen aus Song-Soulmate Datensatz.
+    """
+    # Zeilen werden übersprungen (nicht angezeigt), wenn skiprows-Parameter True ist
+    # i > 0: Index null (Header) soll nicht übersprungen werden -> Namen der Spalten
+    # i % 5000 != 0: Überspringen, wenn i nicht ein Vielfaches von 5000 ist -> Nur jede 5000ste Zeile anzeigen
     df = pd.read_csv("spotify_data_similarity.csv", index_col=0, skiprows=lambda i: i > 0 and i % 5000 != 0)
     return df
 
 
+# Streamlit Konfiguration
 st.set_page_config(page_title="HitPredict 🎶", layout="wide", page_icon="favicon.png")
 st.logo("Logo.png", size="large")
 
 
+# Titel
 st.title("🔍 Deep-dive - Über HitPredict")
 
 st.markdown("""
@@ -22,7 +46,9 @@ Im Zentrum des Tools stehen moderne Methoden der **Audio- und Textanalyse** sowi
 ---
 """)
 
-st.subheader("🗃️ Unser Datenset")
+
+# Abschnitt: Datensatz
+st.subheader("🗃️ Unser Datensatz")
 
 st.markdown("""
 Unsere Vorhersage basiert auf einem [Kaggle Datensatz](https://www.kaggle.com/datasets/amitanshjoshi/spotify-1million-tracks) 
@@ -59,12 +85,14 @@ Anhand der Lyrics konnten wir folgende **textbasierte Metriken** berechnen:
 So entstand unser finaler Datensatz für das Machine Learning *(Auszug)*:
 """)
 
+# Visualisierung Datensatz
 df = load_dataset()
 st.dataframe(df)
 
 st.divider()
 
 
+# Abschnitt: Machine Learning Modell
 st.subheader("🧠 Machine Learning Modell")
 st.markdown("""Um Machine Learning Modelle zu trainieren, haben wir zunächst einige Ausreisser entfernt, 
 wie bspw. Songs mit einer Time signature von null. Ausserdem haben wir One-Hot Encoding für die Genres angewendet, 
@@ -80,6 +108,7 @@ Folgende Machine Learning Modelle haben wir trainiert (teils mit Hyperparameter-
 - **Neuronales Netzwerk**
 """)
 
+# Visualisierung ML Resultate
 ml_results = pd.DataFrame({
     "Lineare Regression": ["12.34", "9.73"],
     "LinReg Ridge": ["12.25", "9.69"],
@@ -88,19 +117,20 @@ ml_results = pd.DataFrame({
     "**XGBoost**": ["**11.35**", "**8.91**"],
     "Neural Network": ["11.42", "9.04"],
     },
-index=["RMSE", "MAE"]
-)
-st.table(ml_results)
+    index=["RMSE", "MAE"]  # RMSE = Root Mean Squared Error; MAE = Mean Absolute Error
+    )
+st.table(ml_results)  # Tabelle
 
 st.markdown("Da XGBoost die besten Resultate zeigte, haben wir das Modell für HitPredict ausgesucht.")
 
 st.divider()
 
-col1, col2 = st.columns(2)
 
+# Abschnitt: Visualisierung Wichtigkeit / Genauigkeit
+col1, col2 = st.columns(2)
 with col1:
     st.subheader("❗ Wichtigkeit der Features")
-    st.image("img/XGBoost Feature Importance.png")
+    st.image("img/XGBoost Feature Importance.png")  # Graph
 
     st.markdown("""
     Anhand der **Feature-Importance** erkennt man, welche Metriken bei der Popularity-Vorhersage am wichtigsten sind.
@@ -116,7 +146,7 @@ with col1:
 
 with col2:
     st.subheader("🎯 Genauigkeit unseres Modells")
-    st.image("img/XGBoost Accuracy.png")
+    st.image("img/XGBoost Accuracy.png")  # Graph
 
     st.markdown("""
     Die **Genauigkeit** unseres Modells haben wir ebenfalls visualisiert.
@@ -133,6 +163,7 @@ with col2:
 st.divider()
 
 
+# Abschnitt: Audioanalyse
 st.subheader("📊 Analyseprozess")
 
 st.markdown("""
@@ -164,10 +195,11 @@ Nun erfolgt die Vorhersage des Popularity Scores anhand des trainierten XGBoost 
 
 st.divider()
 
+
+# Abschnitt: Ergebnisausgabe
 st.subheader("📈 Ergebnisausgabe")
 
 col1, col2 = st.columns([0.6,0.4])
-
 with col1:
     st.markdown("""
     Nach der Analyse liefert HitPredict eine Popularitätsschätzung von **0 bis 100 Punkten**:
@@ -182,10 +214,12 @@ with col1:
     """)
 
 with col2:
-    st.image("img/Popularity Score Distribution.png")
+    st.image("img/Popularity Score Distribution.png")  # Verteilung der Popularity-Scores im Datensatz
 
 st.divider()
 
+
+# Abschnitt: Song Soulmate
 st.subheader("👫 Song Soulmate")
 
 st.markdown("""
@@ -203,6 +237,8 @@ mit einem abspielbaren Widget angezeigt.
 
 st.divider()
 
+
+# Abschnitt: Unser Ziel
 st.subheader("🎯 Unser Ziel")
 
 st.markdown("""
@@ -212,4 +248,3 @@ Ob bei der Auswahl einer Single, der Einschätzung von Marketingbudgets oder der
 
 #### HitPredict: *Know your hit before it’s heard.*
 """)
-

@@ -2,6 +2,8 @@
 # HitPredict - Ein Projekt für 'Grundlagen und Methoden der Informatik für Wirtschaftswissenschaften' an der Universität St.Gallen (2025)
 # Autoren: Ruben Cardell, Adam Bisharat, Helena Häußler, Colin Wirth
 # ---
+# HINWEIS: Dies ist das Herz des Projektes
+# ---
 # ACHTUNG: Installation
 # 1. Es müssen alle Libraries in exakt der richtigen Version aus requirements.txt installiert werden
 # 2. Die App benötigt Python 3.11
